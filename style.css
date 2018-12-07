@@ -37,6 +37,12 @@ table td {
     padding: 3px;
 }
 
+img.logo {
+    max-width: 120px;
+    max-height: 120px;
+    float: right;
+}
+
 @media only screen and (min-width: 768px) {
     div.container {
         width: 50%;
