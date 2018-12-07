@@ -10,11 +10,23 @@ nav ul li {
 nav ul li a {
     padding: 3px 6px;
     border: 1px solid transparent;
-    color: #444;
-    transition: border .25s linear, color 0.25s linear;
+    color: #555;
+    transition: border .25s linear 0s, color .25s linear 0s;
 }
 
 nav ul li a:hover {
     border: 1px solid gray;
     color: black;
+}
+
+@media only screen and (min-width: 1024px) {
+    div.container {
+        width: 60%;
+    }
+}
+
+@media only screen and (max-width: 1025px) {
+    div.container {
+        width: 95%;
+    }
 }
