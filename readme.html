@@ -1,0 +1,218 @@
+<p><img src="https://github.com/RaspberryWallet/Backend/raw/master/docs/logo.png" width=“200” align=“right” /></p>
+<h1><a id="Backend__2"></a>Backend 🔒</h1>
+<p><a href="https://circleci.com/gh/RaspberryWallet/Backend"><img src="https://circleci.com/gh/RaspberryWallet/Backend.svg?style=svg" alt="CircleCI"></a></p>
+<p>This module is responsible for main logic on the whole wallet. It contains HTTP Server, that is accessible by<br>
+client, internal Manager logic, which locks and unlocks modules and also it contains built in Modules logic or<br>
+interfaces that provide access to them.</p>
+<p><img src="https://i.imgur.com/dS7OEjs.gif" alt="Demo"></p>
+<h2><a id="Requirements_11"></a>Requirements</h2>
+<ul>
+<li>Maven 3+</li>
+<li>Java 8</li>
+<li>Kotlin 1.3.0</li>
+</ul>
+<h2><a id="Installation_16"></a>Installation</h2>
+<pre><code class="language-bash"><span class="hljs-comment"># get repo</span>
+git <span class="hljs-built_in">clone</span> https://github.com/RaspberryWallet/Backend.git
+<span class="hljs-built_in">cd</span> Backend
+
+<span class="hljs-comment"># build jars and install them into your local repository</span>
+mvn clean install
+
+<span class="hljs-comment"># run Manager, modules option specifies directory path of Modules classes</span>
+java -jar target/manager_artifact_name.jar [-modules &lt;arg&gt;]
+
+</code></pre>
+<h2><a id="Table_of_contents_30"></a>Table of contents</h2>
+<ul>
+<li><a href="#requirements">Requirements</a></li>
+<li><a href="#installation">Installation</a></li>
+<li><a href="#table-of-contents">Table of contents</a></li>
+<li><a href="#modularity">Modularity</a>
+<ul>
+<li><a href="#module-implementation">Module implementation</a></li>
+<li><a href="#adding-custom-modules">Adding custom modules</a></li>
+</ul>
+</li>
+<li><a href="#not-sure-what-is-this">Not sure what is this</a></li>
+<li><a href="#configuration">Configuration</a>
+<ul>
+<li><a href="#configuration-example">Configuration example</a></li>
+<li><a href="#module-configuration-example">Module configuration example</a></li>
+</ul>
+</li>
+<li><a href="#authors">Authors</a></li>
+<li><a href="#changelog">Changelog</a></li>
+</ul>
+<h2><a id="Modularity_47"></a>Modularity</h2>
+<p>Our architecture is focused on modularity. We want to give user a choice, if<br>
+he wants to have very secured wallet, with a lot of modules, where every module<br>
+stores a little piece of the whole secret. Or if you are just enthusiastic user<br>
+and you are happy with basic security, then single module with PIN is fine for you.</p>
+<p>It’s all about you, how you decide to configure your Wallet.</p>
+<p>By that, it’s possible to use our standard modules, that are ready to use, or add<br>
+your custom modules, that are imported as jar packages.</p>
+<h4><a id="Module_implementation_59"></a>Module implementation</h4>
+<p>It’s overall look about “how to implement module”. You can find out more technical<br>
+details in <a href="#adding-custom-modules">Adding custom modules</a> section.</p>
+<p>Every single module have to implement abstract class <code>Module</code>:<br>
+<a href="https://github.com/RaspberryWallet/Backend/blob/master/Manager/src/main/java/io/raspberrywallet/manager/modules/Module.java">https://github.com/RaspberryWallet/Backend/blob/master/Manager/src/main/java/io/raspberrywallet/manager/modules/Module.java</a></p>
+<p>It may look complicated, but in fact, most of the logic is implemented by default<br>
+as protected methods. You just have to fill abstract methods.</p>
+<p>Module also, should follow package naming convention:</p>
+<ul>
+<li>Your module class name must contains postfix <code>Module</code> e.g. <code>PinModule</code>, <code>PushButtonModule</code></li>
+<li>YourModule class must be placed in <code>io.raspberrywallet.manager.modules.&lt;name&gt;</code>  e.g <code>io.raspberrywallet.manager.modules.pin</code></li>
+</ul>
+<p>Otherwise it won’t be loaded.</p>
+<p>Modules by default reads configuration from their configuration class that<br>
+implements <code>ModuleConfig</code> interface. You don’t have to implement anything,<br>
+<code>ModuleConfig</code> is just for generalization and more like class metadata.</p>
+<p>You can find out more about configuration in <a href="#configuration">Configuration</a> section.</p>
+<p>The last thing you have to do, is signing jars, that must be done, due to verification<br>
+needed for security. It’s easy to imagine situation, where Wallet loads attacker’s<br>
+jar Module, that may cause catastrophic problems to your funds. :imp:</p>
+<h4><a id="Adding_custom_modules_86"></a>Adding custom modules</h4>
+<p>As we said before, your <code>CustomModule.java</code></p>
+<ul>
+<li>must implement <code>io.raspberrywallet.manager.modules.Module</code> interface</li>
+<li>must be in package <code>io.raspberrywallet.manager.modules.&lt;your_package_name&gt;</code></li>
+</ul>
+<p>Manager loads modules (in <code>jar</code> format) from <code>/opt/wallet/modules</code> or specified by <code>-modules path/to/modules/</code> relative to your current directory.</p>
+<p>In order to compile your <code>CustomModule.java</code> follow these steps:</p>
+<pre><code class="language-bash"><span class="hljs-comment"># run Manager and specify correct path to your module and other modules</span>
+javac -cp Manager/target/Manager-&lt;version&gt;-jar-with-dependencies.jar /path/to/your/CustomModule.java <span class="hljs-operator">-d</span> modules/
+
+<span class="hljs-comment"># create jars</span>
+jar cvf CustomModule.jar CustomModule.class
+
+<span class="hljs-comment"># sign jar</span>
+jarsigner -keystore RaspberryWallet.keystore -signedjar CustomModule.jar CustomModule.jar signModules
+
+</code></pre>
+<p>And after these, your module can be loaded on startup :tada:</p>
+<p>There is also helper script in <code>Scripts/modules/compileJarSignAndCopyModules.py</code> that automate everything.</p>
+<p>It will be automatically loaded and verified on startup</p>
+<pre><code>ℹ[INFO][23:45:55][] Successfully verified module io.raspberrywallet.manager.modules.pin.PinModule
+ℹ[INFO][23:45:55][] Successfully verified module io.raspberrywallet.manager.modules.example.ExampleModule
+ℹ[INFO][18:12:39][ModuleClassLoader] Loaded 2 modules
+ℹ[INFO][18:12:39][] Module {
+        name: ExampleModule
+        id: io.raspberrywallet.manager.modules.ExampleModule
+        description: An example waiting and xoring module to show how things work.
+}
+ℹ[INFO][18:12:39][] Module {
+        name: PinModule
+        id: io.raspberrywallet.manager.modules.PinModule
+        description: Module that require enter 4 digits code
+}
+</code></pre>
+<h2><a id="Configuration_128"></a>Configuration</h2>
+<p>RaspberryWallet can be configured with YAML configuration. It depends on modules,<br>
+what configuration do they need. Every module should be documented by itself.</p>
+<h4><a id="Configuration_example_133"></a>Configuration example</h4>
+<pre><code class="language-yaml"># default global configuration
+version: 0.5.0
+base-path-prefix: /opt/wallet/
+autolock-seconds: 60
+
+bitcoin:
+  network: testnet
+  user-agent: RaspberryWallet
+
+server:
+  keystore-name: RaspberryWallet.keystore
+  keystore-password: raspberrywallet
+  key-alias: ssl
+  port: 80
+  secure-port: 433
+
+# every module has his own configuration
+modules:
+
+  # configuration is fully customisable by Module author
+  # module name must match the name given in code (class name)
+  PinModule:
+    # JSON nodes with configuration, that does directly map to class fields
+    # you specify node name in code with annotation @JsonAlias(&quot;name&quot;)
+    max-retry: 5
+
+  AuthorizationServerModule:
+    host: https://127.0.0.1
+    port: 8443
+    accept-untrusted-certs: true
+
+    # configuration can be nasted, can contain lists etc. matches JSON possibilities
+    endpoints:
+      set-secret: /authorization/secret/set
+      overwrite: /authorization/secret/overwrite
+</code></pre>
+<p>Modules by default reads configuration from their configuration class that<br>
+implements <code>ModuleConfig</code> interface. You don’t have to implement anything,<br>
+<code>ModuleConfig</code> is just for generalization and more like class metadata.</p>
+<h4><a id="Module_configuration_example_177"></a>Module configuration example</h4>
+<p>Let the code explain how it works. We’ve got the following configuration for<br>
+<code>PinModule</code>:</p>
+<pre><code class="language-yaml">modules:
+  PinModule:
+    max-retry: 5
+</code></pre>
+<p>Fields are specified in <code>PinModuleConfig</code> class like this:</p>
+<pre><code class="language-java"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">PinModuleConfig</span> <span class="hljs-keyword">implements</span> <span class="hljs-title">ModuleConfig</span> </span>{
+
+    <span class="hljs-annotation">@JsonAlias</span>(<span class="hljs-string">"max-retry"</span>)
+    <span class="hljs-keyword">public</span> <span class="hljs-keyword">int</span> maxRetry = <span class="hljs-number">3</span>;
+
+    <span class="hljs-annotation">@JsonAlias</span>(<span class="hljs-string">"min-length"</span>)
+    <span class="hljs-keyword">public</span> <span class="hljs-keyword">int</span> minLength = <span class="hljs-number">4</span>;
+
+    <span class="hljs-annotation">@JsonAlias</span>(<span class="hljs-string">"max-length"</span>)
+    <span class="hljs-keyword">public</span> <span class="hljs-keyword">int</span> maxLength = <span class="hljs-number">9</span>;
+}
+</code></pre>
+<p>As you can see, <code>max-retry: 5</code> is mapped by Wallet to a field <code>public int maxRetry</code>.<br>
+You can assign values to other fields implemented in <code>PinModuleConfig</code> class analogically.</p>
+<h2><a id="Documents_206"></a>Documents</h2>
+<p>More documents can be found in dedicated repository <a href="https://github.com/RaspberryWallet/Documents">here</a></p>
+<h2><a id="Authors_209"></a>Authors</h2>
+<table class="table table-striped table-bordered">
+<thead>
+<tr>
+<th>Name</th>
+<th>email</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="https://github.com/stasbar">Stanisław Barański</a></td>
+<td>stasbar1995 at <a href="http://gmail.com">gmail.com</a></td>
+</tr>
+<tr>
+<td><a href="https://github.com/PatrykMilewski">Patryk Milewski</a></td>
+<td>patryk.milewski at <a href="http://gmail.com">gmail.com</a></td>
+</tr>
+<tr>
+<td><a href="https://github.com/pfoof">Piotr Pabis</a></td>
+<td>rotworm0 at <a href="http://yahoo.pl">yahoo.pl</a></td>
+</tr>
+</tbody>
+</table>
+<h2><a id="Changelog_219"></a>Changelog</h2>
+<table class="table table-striped table-bordered">
+<thead>
+<tr>
+<th>Version</th>
+<th>Is backward- compatible</th>
+<th>Changes</th>
+<th>Commit ID</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td></td>
+<td></td>
+<td></td>
+<td>There are no released versions</td>
+</tr>
+</tbody>
+</table>
