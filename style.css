@@ -11,7 +11,7 @@ nav ul li a {
     padding: 3px 6px;
     border: 1px solid transparent;
     color: #444;
-    transition: border 0s .25s linear, color 0s 0.25s linear;
+    transition: border .25s linear, color 0.25s linear;
 }
 
 nav ul li a:hover {
