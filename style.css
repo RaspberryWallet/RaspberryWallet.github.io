@@ -19,7 +19,7 @@ nav ul li a:hover {
     color: black;
 }
 
-@media only screen and (min-width: 1024px) {
+@media only screen and (min-width: 768px) {
     div.container {
         width: 60%;
     }
